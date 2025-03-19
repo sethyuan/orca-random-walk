@@ -5,6 +5,7 @@ const zhCN = {
   "You have to specify a query scope in the plugin settings.":
     "请在插件设置中指定查询范围。",
   "Random walk": "随机漫步",
+  "Please give a valid query block.": "请输入一个有效的查询块。",
 }
 
 export default zhCN

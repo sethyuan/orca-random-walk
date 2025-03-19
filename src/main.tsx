@@ -1,8 +1,12 @@
+import { shuffle } from "rambdax"
 import LogoImg from "../icon.png"
 import { setupL10N, t } from "./libs/l10n"
+import type { Block, DbId } from "./orca"
 import zhCN from "./translations/zhCN"
 
 let pluginName: string
+let shuffledResults: DbId[] = []
+let currentIndex: number = 0
 
 export async function load(_name: string) {
   pluginName = _name
@@ -31,15 +35,41 @@ export async function load(_name: string) {
         const settings = orca.state.plugins[pluginName].settings
         const queryBlockId = settings?.queryBlockId
 
-        if (queryBlockId == null) {
-          orca.notify(
-            "error",
-            t("You have to specify a query scope in the plugin settings."),
-          )
-          return
-        }
+        try {
+          if (shuffledResults.length === 0 || currentIndex === 0) {
+            const queryBlock: Block = await orca.invokeBackend(
+              "get-block",
+              queryBlockId,
+            )
+            const queryBlockRepr = queryBlock?.properties.find(
+              (p) => p.name === "_repr",
+            )?.value
 
-        // TODO: Query, shuffle and return the next note.
+            if (queryBlockRepr?.type !== "query") {
+              orca.notify("error", t("Please give a valid query block."))
+              return
+            }
+
+            const queryResults: DbId[] = await orca.invokeBackend(
+              "query",
+              queryBlockRepr.q,
+            )
+
+            if (!queryResults?.length) {
+              orca.notify("warn", t("No results found for the query."))
+              return
+            }
+
+            shuffledResults = shuffle(queryResults)
+            currentIndex = 0
+          }
+
+          currentIndex = (currentIndex + 1) % shuffledResults.length
+          const nextBlockId = shuffledResults[currentIndex]
+          orca.nav.goTo("block", { blockId: nextBlockId })
+        } catch (err) {
+          console.error(err)
+        }
       },
       t("Go to the next randomly picked note"),
     )
