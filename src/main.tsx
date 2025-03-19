@@ -4,6 +4,8 @@ import { setupL10N, t } from "./libs/l10n"
 import type { Block, DbId } from "./orca"
 import zhCN from "./translations/zhCN"
 
+const MAX_SIZE = 500
+
 let pluginName: string
 let shuffledResults: DbId[] = []
 let currentIndex: number = 0
@@ -50,6 +52,8 @@ export async function load(_name: string) {
               return
             }
 
+            queryBlockRepr.q.page = 1
+            queryBlockRepr.q.pageSize = MAX_SIZE
             const queryResults: DbId[] = await orca.invokeBackend(
               "query",
               queryBlockRepr.q,
